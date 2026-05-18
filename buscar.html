@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador General de Personal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root { --navy-deep: #091e36; --navy-light: #0f2d4a; --teal: #14b8a6; }
+        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; margin: 0; }
+        .navbar-custom { background-color: var(--navy-deep); color: white; padding: 15px 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .navbar-brand-title { font-weight: 700; font-size: 1.2rem; margin: 0; letter-spacing: 0.5px; }
+        .search-panel { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; margin-top: 30px; margin-bottom: 25px; }
+        .filter-label { font-weight: 600; font-size: 0.75rem; color: #1e293b; text-transform: uppercase; margin-bottom: 6px; display: block; }
+        .input-custom { border: 1px solid #cbd5e1!important; border-radius: 8px!important; padding: 10px 12px!important; font-size: 0.9rem; height: 42px; }
+        .input-custom:focus { border-color: var(--teal)!important; box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15)!important; }
+        .data-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 12px rgba(0,0,0,0.02); overflow: hidden; }
+        .data-card-header { background: #f8fafc; padding: 16px 20px; border-bottom: 1px solid #e2e8f0; font-weight: 600; color: var(--navy-deep); }
+        .table thead th { background-color: #f1f5f9!important; color: var(--navy-deep)!important; font-weight: 600!important; font-size: 0.75rem; text-transform: uppercase; padding: 14px 12px!important; border-bottom: 2px solid #e2e8f0!important; }
+        .table tbody td { padding: 12px!important; font-size: 0.85rem; white-space: nowrap; color: #334155; vertical-align: middle; }
+        .dataTables_filter { display: none !important; }
+    </style>
+</head>
+<body>
+    <!-- Verificación Estricta de Sesión -->
+    <script>if(localStorage.getItem('auth_session_token') !== 'active') { window.location.href = 'index.html'; }</script>
+
+    <div class="navbar-custom d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <i class="fa-solid fa-users-gear text-teal" style="font-size:1.4rem;"></i>
+            <h1 class="navbar-brand-title">Sistema de Consulta de Personal</h1>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <a href="actualizar.html" class="btn btn-sm btn-outline-light px-3" style="border-radius:6px;"><i class="fa-solid fa-cloud-arrow-up me-2"></i>Cargar Excel</a>
+            <button onclick="localStorage.removeItem('auth_session_token'); window.location.href='index.html';" class="btn btn-sm btn-danger px-3" style="border-radius:6px;"><i class="fa-solid fa-door-open me-2"></i>Salir</button>
+        </div>
+    </div>
+
+    <div class="container-fluid px-4">
+        <div class="search-panel">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="filter-label">Apellidos y Nombres</label>
+                    <input type="text" id="fn" class="form-control input-custom" placeholder="Filtrar por nombre completo..." autocomplete="off">
+                </div>
+                <div class="col-md-3">
+                    <label class="filter-label">Código Funcionario</label>
+                    <input type="text" id="fc" class="form-control input-custom" placeholder="Filtrar por código..." autocomplete="off">
+                </div>
+                <div class="col-md-3">
+                    <label class="filter-label">Grado o Escalafón</label>
+                    <input type="text" id="fg" class="form-control input-custom" placeholder="Filtrar por rango..." autocomplete="off">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button id="clearBtn" class="btn btn-secondary w-100" style="height:42px; border-radius:8px; font-size:0.9rem; font-weight:500;"><i class="fa-solid fa-filter-circle-xmark me-2"></i>Limpiar</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card data-card">
+            <div class="data-card-header d-flex justify-content-between align-items-center">
+                <span><i class="fa-solid fa-database text-teal me-2"></i>Registros Activos</span>
+                <span id="counter" class="badge bg-secondary px-3 py-2 text-white" style="font-size:0.8rem; font-weight:500;">Cargando...</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table id="personalTable" class="table table-striped table-hover w-100 m-0">
+                        <thead>
+                            <tr>
+                                <th>N.Ord</th>
+                                <th>Escalafón</th>
+                                <th>Grado</th>
+                                <th>Apellidos y Nombres</th>
+                                <th>Cód. Funcionario</th>
+                                <th>Estado Civil</th>
+                                <th>Fecha Nacimiento</th>
+                                <th>Fecha Ingreso</th>
+                                <th>Fecha Ascenso</th>
+                                <th>Observaciones</th>
+                                <th>Observaciones 2</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script>
+        let master = [];
+        let dt;
+
+        $(document).ready(function() {
+            fetch('datos.json')
+                .then(r => r.json())
+                .then(data => {
+                    master = data;
+                    $('#counter').text(master.length.toLocaleString() + ' registros totales');
+                    inicializarTabla(master);
+                })
+                .catch(err => {
+                    $('#counter').text('0 registros activos');
+                    inicializarTabla([]);
+                });
+
+            function inicializarTabla(dataSet) {
+                dt = $('#personalTable').DataTable({
+                    data: dataSet,
+                    deferRender: true,
+                    pageLength: 15,
+                    dom: 'rtip',
+                    language: { url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-ES.json' },
+                    columns: [
+                        { render: function(d,t,r){ return r["N.Ord"] || r["N.ord"] || r["n.ord"] || ""; } },
+                        { render: function(d,t,r){ return r["Escalafon"] || r["Escalafón"] || ""; } },
+                        { render: function(d,t,r){ return r["Grado"] || ""; } },
+                        { render: function(d,t,r){ return r["Apellidos y Nombres"] || r["Nombre"] || ""; } },
+                        { render: function(d,t,r){ return r["Codigo Funcionario"] || r["Cod.Func."] || r["Cod. Func."] || ""; } },
+                        { render: function(d,t,r){ return r["Estado Civil"] || r["E.Civil"] || ""; } },
+                        { render: function(d,t,r){ return r["Fecha Nacimiento"] || r["Fec-Nac"] || ""; } },
+                        { render: function(d,t,r){ return r["Fecha Ingreso"] || r["Fec-Ing"] || ""; } },
+                        { render: function(d,t,r){ return r["Fecha Ascenso"] || r["Fec-Asc"] || ""; } },
+                        { render: function(d,t,r){ return r["Observaciones"] || ""; } },
+                        { render: function(d,t,r){ return r["Observaciones2"] || r["Column11"] || ""; } }
+                    ]
+                });
+            }
+
+            function filtrar() {
+                let n = $('#fn').val().toLowerCase().trim();
+                let c = $('#fc').val().toLowerCase().trim();
+                let g = $('#fg').val().toLowerCase().trim();
+
+                let fil = master.filter(r => {
+                    let txtN = (r["Apellidos y Nombres"] || r["Nombre"] || "").toLowerCase();
+                    let txtC = (r["Codigo Funcionario"] || r["Cod.Func."] || r["Cod. Func."] || "").toString().toLowerCase();
+                    let txtG = (r["Grado"] || "").toLowerCase();
+                    let txtE = (r["Escalafon"] || r["Escalafón"] || "").toLowerCase();
+
+                    if(n && !n.split(" ").every(t => txtN.includes(t))) return false;
+                    if(c && !txtC.includes(c)) return false;
+                    if(g && !txtG.includes(g) && !txtE.includes(g)) return false;
+                    return true;
+                });
+                dt.clear().rows.add(fil).draw();
+                $('#counter').text(fil.length.toLocaleString() + ' coincidencias');
+            }
+
+            $('#fn, #fc, #fg').on('input', filtrar);
+            $('#clearBtn').on('click', function() {
+                $('#fn, #fc, #fg').val('');
+                dt.clear().rows.add(master).draw();
+                $('#counter').text(master.length.toLocaleString() + ' registros totales');
+            });
+        });
+    </script>
+</body>
+</html>
